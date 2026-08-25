@@ -81,7 +81,7 @@ class HasDocument:
 
             
 
-            flag, p1, p2, p3, p4 = finder.isSquare(points=points_intercection,altura=self.img.shape[0],largura=img.shape[1])
+            flag, p1, p2, p3, p4 = finder.isSquare(points=points_intercection,altura=self.img.shape[0],largura=self.img.shape[1])
 
 
             if (flag == 1):
@@ -97,11 +97,12 @@ class HasDocument:
         return flag, p1, p2, p3, p4    #se achou e onde achou
 
 
-caminho_imagem = 'filter_has_document/img_teste.jpg'
-img = cv2.imread(caminho_imagem)
+if __name__ == "__main__":
+        caminho_imagem = 'filter_has_document/img_teste.jpg'
+        img = cv2.imread(caminho_imagem)
 
-filtro = HasDocument(img)
-flag, p1, p2, p3, p4 = filtro.do()
-print(flag, p1, p2, p3, p4)
+        filtro = HasDocument(img)
+        flag, p1, p2, p3, p4 = filtro.do()
+        print(flag, p1, p2, p3, p4)
 
-cv2.imwrite('filter_has_document/output.jpg', filtro.result)
+        cv2.imwrite('filter_has_document/output.jpg', filtro.result)

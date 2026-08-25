@@ -63,7 +63,7 @@ class Finder:
                         accept[3] = 1
 
         for ac in accept:
-                if ac is 1:
+                if ac == 1:
                         continue
                 return 0, None, None, None, None              
 
