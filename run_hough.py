@@ -17,6 +17,10 @@ def calcular_geometria(p1, p2, p3, p4, shape):
     area_poly = cv2.contourArea(pts)
     relative_area = area_poly / area_img if area_img > 0 else 0.0
 
+    if relative_area > 0.90:
+         sys.stderr.write(f"[Python-Hough] Alerta: Vazamento de borda detectado (Area: {relative_area:.2f}). Rejeitando.\n")
+         return -1.0
+
     max_cosine = 0.0
     for i in range(4):
         v1 = pts[(i + 3) % 4] - pts[i]
@@ -49,16 +53,19 @@ def main():
 
     if flag == 1:
         score = calcular_geometria(p1, p2, p3, p4, img.shape)
-        resultado = {
-            "achou": True,
-            "score": round(score, 6),
-            "pontos": [
-                [int(p1[0]), int(p1[1])],
-                [int(p2[0]), int(p2[1])],
-                [int(p3[0]), int(p3[1])],
-                [int(p4[0]), int(p4[1])]
-            ]
-        }
+        if score < 0.0:
+            resultado = {"achou": False, "score": 0.0, "pontos": []}
+        else:
+            resultado = {
+                "achou": True,
+                "score": round(score, 6),
+                "pontos": [
+                    [int(p1[0]), int(p1[1])],
+                    [int(p2[0]), int(p2[1])],
+                    [int(p3[0]), int(p3[1])],
+                    [int(p4[0]), int(p4[1])]
+                ]
+            }
     else:
         resultado = {"achou": False, "score": 0.0, "pontos": []}
 

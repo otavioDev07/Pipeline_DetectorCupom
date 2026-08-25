@@ -113,7 +113,7 @@ class FilterWaterShed(BaseFilter):
 
     def apply(self, path, log_body: LogBody):
         markers, inundacao = self.inundacao_document(path, show=False)
-        acepted = self.accepted(markers, inundacao, save=True)
+        acepted = self.accepted(markers, inundacao, save=False)
         log_body.filters_applied.append(self.name)
         log_body.accepted = acepted  # Watershed não rejeita a imagem, apenas segmenta. 
         #fazer detecção com base no tamanho do maior rótulo
@@ -285,7 +285,8 @@ class FilterWaterShed(BaseFilter):
         text_y = (status_img.shape[0] + text_h) // 2
         cv2.putText(status_img, status_text, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 1.1, status_color, 3, cv2.LINE_AA)
 
-        img_show_lado_a_lado([self.img,
+        
+        '''img_show_lado_a_lado([self.img,
                               cv2.cvtColor(self.bin, cv2.COLOR_GRAY2BGR),
                               cv2.cvtColor(self.closed, cv2.COLOR_GRAY2BGR),
                               cv2.cvtColor(self.norm, cv2.COLOR_GRAY2BGR),
@@ -308,7 +309,7 @@ class FilterWaterShed(BaseFilter):
                                          'Original',
                                          'Marcadores',
                                          'Inundação',
-                                         'Resultado'], map='jet', save=save)
+                                         'Resultado'], map='jet', save=save) '''
         return cupom_encontrado, poly_points
 
 # %%
