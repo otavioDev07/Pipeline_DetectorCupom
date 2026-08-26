@@ -82,7 +82,7 @@ def main():
             out_path = os.path.join(out_dir, f"{num_str}_P.jpg")
             cv2.imwrite(out_path, warped)
         else:
-            sys.stderr.write(f"[Recorte] {num_str}: imagem rejeitada pelo borradez (FFT: {fft_score:.2f} < 225).\n")
+            sys.stderr.write(f"[Recorte] {num_str}: imagem rejeitada pelo borradez (FFT: {fft_score:.2f} < 0.222).\n")
             
             out_path = os.path.join(out_dir, f"{num_str}_N.jpg")
             shutil.copy(img_path, out_path)
