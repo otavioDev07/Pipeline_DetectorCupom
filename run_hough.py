@@ -17,7 +17,7 @@ def calcular_geometria(p1, p2, p3, p4, shape):
     area_poly = cv2.contourArea(pts)
     relative_area = area_poly / area_img if area_img > 0 else 0.0
 
-    if relative_area > 0.80:
+    if relative_area > 0.90:
          sys.stderr.write(f"[Python-Hough] Alerta: Vazamento de borda detectado (Area: {relative_area:.2f}). Rejeitando.\n")
          return -1.0
 
