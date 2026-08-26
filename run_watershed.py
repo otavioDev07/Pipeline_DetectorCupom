@@ -45,7 +45,7 @@ def main():
             area_poly = cv2.contourArea(pts4)
             rel_area = area_poly / area_img if area_img > 0 else 0.0
 
-            if rel_area > 0.90:
+            if rel_area > 0.80:
                 sys.stderr.write(f"[Python-Watershed] Alerta: Vazamento de borda detectado (Area: {rel_area:.2f}). Rejeitando.\n")
                 resultado = {"achou": False, "score": 0.0, "pontos": []}
             else:

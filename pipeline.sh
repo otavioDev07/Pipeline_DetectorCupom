@@ -1,74 +1,102 @@
 #!/bin/bash
 
-# --- 1. HIPERPARÂMETROS DE CORTE (EARLY EXITS) ---
+# HIPERPARÂMETROS DE CORTE (EARLY EXITS)
 THRESH_RDP=0.32
 THRESH_HOUGH=0.28
 
-if [ "$#" -ne 1 ]; then
-    echo "Uso: ./pipeline.sh <caminho_da_imagem.jpg>"
+# --- 2. VALIDAÇÃO DE ENTRADA (AGORA PARA PASTAS) --
+if [ "$#" -ne 2 ]; then
+    echo "Uso: ./pipeline.sh <PASTA_DE_ENTRADA> <PASTA_DE_SAIDA>"
+    echo "Exemplo: ./pipeline.sh ./input ../result_pipeline"
     exit 1
 fi
 
-IMAGE="$1"
-if [ ! -f "$IMAGE" ]; then
-    echo "[Erro] Arquivo de imagem nao encontrado: $IMAGE"
+INPUT_DIR="$1"
+OUTPUT_DIR="$2"
+
+if [ ! -d "$INPUT_DIR" ]; then
+    echo "[Erro] A pasta de entrada '$INPUT_DIR' nao existe!"
     exit 1
 fi
 
 echo "==================================================="
-echo "[Pipeline] Iniciando processamento: $IMAGE"
+echo "[Pipeline] Iniciando processamento em lote da pasta: $INPUT_DIR"
 echo "==================================================="
 
-# Ativa a bolha do Python silenciosamente
+# --- 3. PREPARAÇÃO DO AMBIENTE ---
 source .venv/bin/activate
 
-# Cria uma pasta temporária para armazenar os JSONs intermediários
+mkdir -p "$OUTPUT_DIR"
 TMP_DIR="./tmp_pipeline"
 mkdir -p "$TMP_DIR"
 
 RDP_JSON="$TMP_DIR/rdp.json"
 HOUGH_JSON="$TMP_DIR/hough.json"
 WS_JSON="$TMP_DIR/ws.json"
+FINAL_JSON="$TMP_DIR/decisao_final.json"
 
-echo "[1/4] Rodando RDP (C++)..."
-./RDP+HoughProb/detector "$IMAGE" > "$RDP_JSON"
-
-SCORE_RDP=$(python3 -c "import sys, json; print(json.load(sys.stdin).get('score', 0.0))" < "$RDP_JSON")
-
-PASSED_RDP=$(python3 -c "print(1 if $SCORE_RDP >= $THRESH_RDP else 0)")
-if [ "$PASSED_RDP" -eq 1 ]; then
-    echo "✅ [Early Exit 1] RDP atingiu confianca altissima ($SCORE_RDP). Finalizando!"
-    FINAL_JSON="$RDP_JSON"
-    
-else
-    echo "[2/4] RDP insuficiente ($SCORE_RDP). Rodando Hough (Python)..."
-    python3 run_hough.py "$IMAGE" > "$HOUGH_JSON"
-    
-    SCORE_HOUGH=$(python3 -c "import sys, json; print(json.load(sys.stdin).get('score', 0.0))" < "$HOUGH_JSON")
-    
-    PASSED_HOUGH=$(python3 -c "print(1 if $SCORE_HOUGH >= $THRESH_HOUGH else 0)")
-    if [ "$PASSED_HOUGH" -eq 1 ]; then
-        echo "✅ [Early Exit 2] Hough atingiu confianca intermediaria ($SCORE_HOUGH). Finalizando!"
-        FINAL_JSON="$HOUGH_JSON"
-        
-    else
-        echo "[3/4] Hough insuficiente ($SCORE_HOUGH). Acionando Watershed (Pesado)..."
-        python3 run_watershed.py "$IMAGE" > "$WS_JSON"
-        
-        echo "[4/4] Sem Early Exits. Invocando Arbitro de Consenso (IoU)..."
-        FINAL_JSON="$TMP_DIR/decisao_final.json"
-        python3 modulo_decisao.py "$RDP_JSON" "$HOUGH_JSON" "$WS_JSON" > "$FINAL_JSON"
+# --- VERIFICAÇÃO E COMPILAÇÃO DO C++ ---
+DETECTOR_BIN="./RDP+HoughProb/detector"
+if [ ! -f "$DETECTOR_BIN" ]; then
+    echo "🔨 Compilando motor C++..."
+    g++ -std=c++17 RDP+HoughProb/detector.cpp -o "$DETECTOR_BIN" $(pkg-config --cflags --libs opencv4)
+    if [ $? -ne 0 ]; then 
+        echo "[Erro] Falha ao compilar o detector C++."
+        exit 1 
     fi
 fi
 
-echo "==================================================="
-echo "🎯 RESULTADO FINAL:"
-cat "$FINAL_JSON"
-echo "==================================================="
+TOTAL=$(ls -1q "$INPUT_DIR"/*.jpg 2>/dev/null | wc -l)
+COUNT=0
 
-OUTPUT_DIR="../result_pipeline"
+for IMAGE in "$INPUT_DIR"/*.jpg; do
+    [ -e "$IMAGE" ] || continue 
+    
+    COUNT=$((COUNT+1))
+    FILENAME=$(basename "$IMAGE")
+    
+    # 1. ACIONA O C++
+    "$DETECTOR_BIN" "$IMAGE" > "$RDP_JSON" 2>/dev/null
+    
+    SCORE_RDP=$(python3 -c 'import sys, json
+try: print(json.load(sys.stdin).get("score", 0.0))
+except: print(0.0)' < "$RDP_JSON" 2>/dev/null)
+    
+    SCORE_RDP=${SCORE_RDP:-0.0}
+    PASSED_RDP=$(python3 -c "print(1 if $SCORE_RDP >= $THRESH_RDP else 0)")
+    
+    if [ "$PASSED_RDP" -eq 1 ]; then
+        cp "$RDP_JSON" "$FINAL_JSON"
+        ESTRATEGIA="RDP"
+    else
+        # 2. ACIONA O HOUGH
+        python3 run_hough.py "$IMAGE" > "$HOUGH_JSON" 2>/dev/null
+        
+        SCORE_HOUGH=$(python3 -c 'import sys, json
+try: print(json.load(sys.stdin).get("score", 0.0))
+except: print(0.0)' < "$HOUGH_JSON" 2>/dev/null)
+        
+        SCORE_HOUGH=${SCORE_HOUGH:-0.0}
+        PASSED_HOUGH=$(python3 -c "print(1 if $SCORE_HOUGH >= $THRESH_HOUGH else 0)")
+        
+        if [ "$PASSED_HOUGH" -eq 1 ]; then
+            cp "$HOUGH_JSON" "$FINAL_JSON"
+            ESTRATEGIA="Hough"
+        else
+            # 3. ÚLTIMO RECURSO (Watershed direto, sem Fast Reject)
+            python3 run_watershed.py "$IMAGE" > "$WS_JSON" 2>/dev/null
+            python3 modulo_decisao.py "$RDP_JSON" "$HOUGH_JSON" "$WS_JSON" > "$FINAL_JSON" 2>/dev/null
+            ESTRATEGIA="Consenso/Fallback"
+        fi
+    fi
 
-echo "[5/5] Executando recorte e correcao de perspectiva..."
-python3 recortar.py "$IMAGE" "$FINAL_JSON" "$OUTPUT_DIR"
+    # Aplica o recorte e a avaliação de nitidez FFT via Python
+    python3 recortar.py "$IMAGE" "$FINAL_JSON" "$OUTPUT_DIR"
+    
+    echo "[$COUNT/$TOTAL] $FILENAME -> Processada via $ESTRATEGIA"
+done
 
+# --- 5. LIMPEZA ---
 rm -rf "$TMP_DIR"
+echo "==================================================="
+echo "✅ Processamento concluido! Imagens salvas em: $OUTPUT_DIR"
