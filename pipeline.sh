@@ -37,7 +37,7 @@ SCORE_RDP=$(python3 -c "import sys, json; print(json.load(sys.stdin).get('score'
 
 PASSED_RDP=$(python3 -c "print(1 if $SCORE_RDP >= $THRESH_RDP else 0)")
 if [ "$PASSED_RDP" -eq 1 ]; then
-    echo "✅ [Early Exit 1] RDP atingiu confianca altissima ($SCORE_RDP). Finalizando!"
+    echo "[Early Exit 1] RDP atingiu confianca altissima ($SCORE_RDP). Finalizando!"
     FINAL_JSON="$RDP_JSON"
     
 else
@@ -48,7 +48,7 @@ else
     
     PASSED_HOUGH=$(python3 -c "print(1 if $SCORE_HOUGH >= $THRESH_HOUGH else 0)")
     if [ "$PASSED_HOUGH" -eq 1 ]; then
-        echo "✅ [Early Exit 2] Hough atingiu confianca intermediaria ($SCORE_HOUGH). Finalizando!"
+        echo "[Early Exit 2] Hough atingiu confianca intermediaria ($SCORE_HOUGH). Finalizando!"
         FINAL_JSON="$HOUGH_JSON"
         
     else
@@ -62,7 +62,7 @@ else
 fi
 
 echo "==================================================="
-echo "🎯 RESULTADO FINAL:"
+echo "RESULTADO FINAL:"
 cat "$FINAL_JSON"
 echo "==================================================="
 
