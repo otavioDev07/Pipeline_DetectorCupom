@@ -99,4 +99,4 @@ done
 # --- 5. LIMPEZA ---
 rm -rf "$TMP_DIR"
 echo "==================================================="
-echo "✅ Processamento concluido! Imagens salvas em: $OUTPUT_DIR"
+echo "Processamento concluido! Imagens salvas em: $OUTPUT_DIR"
