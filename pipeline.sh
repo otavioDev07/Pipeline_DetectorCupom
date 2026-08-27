@@ -66,7 +66,7 @@ echo "RESULTADO FINAL:"
 cat "$FINAL_JSON"
 echo "==================================================="
 
-OUTPUT_DIR="../result_pipeline"
+OUTPUT_DIR="../resultMAIN_pipeline"
 
 echo "[5/5] Executando recorte e correcao de perspectiva..."
 python3 recortar.py "$IMAGE" "$FINAL_JSON" "$OUTPUT_DIR"
