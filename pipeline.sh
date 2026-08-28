@@ -27,6 +27,9 @@ echo "==================================================="
 source .venv/bin/activate
 
 mkdir -p "$OUTPUT_DIR"
+REJEITADAS_DIR="$OUTPUT_DIR/REJEITADAS"
+mkdir -p "$REJEITADAS_DIR"
+
 TMP_DIR="./tmp_pipeline"
 mkdir -p "$TMP_DIR"
 
@@ -46,11 +49,14 @@ if [ ! -f "$DETECTOR_BIN" ]; then
     fi
 fi
 
-TOTAL=$(ls -1q "$INPUT_DIR"/*.jpg 2>/dev/null | wc -l)
+# Contagem considerando arquivos webp (e variações maiúsculas/minúsculas)
+TOTAL=$(find "$INPUT_DIR" -maxdepth 1 -type f \( -iname "*.webp" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) 2>/dev/null | wc -l)
 COUNT=0
+REJEITADAS=()
 
-for IMAGE in "$INPUT_DIR"/*.jpg; do
-    [ -e "$IMAGE" ] || continue 
+shopt -s nullglob
+for IMAGE in "$INPUT_DIR"/*.{webp,WEBP,jpg,JPG,jpeg,JPEG,png,PNG}; do
+    [ -f "$IMAGE" ] || continue 
     
     COUNT=$((COUNT+1))
     FILENAME=$(basename "$IMAGE")
@@ -90,13 +96,32 @@ except: print(0.0)' < "$HOUGH_JSON" 2>/dev/null)
         fi
     fi
 
-    # Aplica o recorte e a avaliação de nitidez FFT via Python
+    # Aplica o recorte
     python3 recortar.py "$IMAGE" "$FINAL_JSON" "$OUTPUT_DIR"
-    
-    echo "[$COUNT/$TOTAL] $FILENAME -> Processada via $ESTRATEGIA"
+    STATUS_RECORTE=$?
+
+    if [ $STATUS_RECORTE -eq 0 ]; then
+        echo "[$COUNT/$TOTAL] $FILENAME -> Processada via $ESTRATEGIA"
+    else
+        echo "[$COUNT/$TOTAL] $FILENAME -> REJEITADA"
+        REJEITADAS+=("$FILENAME")
+        cp "$IMAGE" "$REJEITADAS_DIR/"
+    fi
 done
+shopt -u nullglob
 
 # --- 5. LIMPEZA ---
 rm -rf "$TMP_DIR"
 echo "==================================================="
 echo "Processamento concluido! Imagens salvas em: $OUTPUT_DIR"
+echo "Total de imagens rejeitadas: ${#REJEITADAS[@]}"
+echo "Copia das rejeitadas salva em: $REJEITADAS_DIR"
+echo "==================================================="
+
+if [ ${#REJEITADAS[@]} -gt 0 ]; then
+    echo "LISTA DE IMAGENS REJEITADAS:"
+    for IMG in "${REJEITADAS[@]}"; do
+        echo " - $IMG"
+    done
+    echo "==================================================="
+fi
