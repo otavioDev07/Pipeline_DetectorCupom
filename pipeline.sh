@@ -68,7 +68,13 @@ echo "==================================================="
 
 OUTPUT_DIR="../resultMAIN_pipeline"
 
-echo "[5/5] Executando recorte e correcao de perspectiva..."
-python3 recortar.py "$IMAGE" "$FINAL_JSON" "$OUTPUT_DIR"
+ACHOU=$(python3 -c "import sys, json; print(json.load(sys.stdin).get('achou', False))" < "$FINAL_JSON" 2>/dev/null)
+
+if [ "$ACHOU" = "True" ]; then
+    echo "[5/5] Executando recorte e correcao de perspectiva..."
+    python3 recortar.py "$IMAGE" "$FINAL_JSON" "$OUTPUT_DIR"
+else
+    echo "[5/5] Recorte ignorado: Nenhum cupom encontrado na imagem."
+fi
 
 rm -rf "$TMP_DIR"
