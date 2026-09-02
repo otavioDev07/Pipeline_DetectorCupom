@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # HIPERPARÂMETROS DE CORTE (EARLY EXITS)
-THRESH_RDP=0.25
-THRESH_HOUGH=0.22
+THRESH_RDP=0.30
+THRESH_HOUGH=0.28
 
 # --- 2. VALIDAÇÃO DE ENTRADA (AGORA PARA PASTAS) --
 if [ "$#" -ne 2 ]; then
@@ -49,7 +49,7 @@ if [ ! -f "$DETECTOR_BIN" ]; then
     fi
 fi
 
-# Contagem considerando arquivos webp (e variações maiúsculas/minúsculas)
+# Contagem considerando arquivos webp 
 TOTAL=$(find "$INPUT_DIR" -maxdepth 1 -type f \( -iname "*.webp" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) 2>/dev/null | wc -l)
 COUNT=0
 REJEITADAS=()
@@ -119,9 +119,15 @@ echo "Copia das rejeitadas salva em: $REJEITADAS_DIR"
 echo "==================================================="
 
 if [ ${#REJEITADAS[@]} -gt 0 ]; then
+    TXT_REJEITADAS="$REJEITADAS_DIR/lista_rejeitadas.txt"
+    > "$TXT_REJEITADAS" # Limpa o arquivo caso ele já exista de uma rodada anterior
+
     echo "LISTA DE IMAGENS REJEITADAS:"
     for IMG in "${REJEITADAS[@]}"; do
         echo " - $IMG"
+        echo "$IMG" >> "$TXT_REJEITADAS"
     done
+    echo "==================================================="
+    echo "Arquivo TXT com os nomes gerado em: $TXT_REJEITADAS"
     echo "==================================================="
 fi
