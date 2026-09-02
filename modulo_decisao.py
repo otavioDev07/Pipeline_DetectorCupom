@@ -74,7 +74,7 @@ def main():
 
     # --- PARÂMETROS DO PAPER DESIGN ---
     LIMIAR_IOU = 0.80
-    TRAVA_FALLBACK = 0.18
+    TRAVA_FALLBACK = 0.22
 
     candidatos = {"RDP": rdp, "Hough": hough, "Watershed": ws}
     validos = {nome: dados for nome, dados in candidatos.items() if dados.get("achou")}

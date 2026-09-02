@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # --- 1. HIPERPARÂMETROS DE CORTE (EARLY EXITS) ---
-THRESH_RDP=0.25
-THRESH_HOUGH=0.22
+THRESH_RDP=0.30
+THRESH_HOUGH=0.28
 
 if [ "$#" -ne 1 ]; then
     echo "Uso: ./pipeline.sh <caminho_da_imagem.jpg>"
