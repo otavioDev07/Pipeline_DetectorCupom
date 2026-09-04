@@ -77,4 +77,6 @@ if [ "$ACHOU" = "True" ]; then
     python3 recortar.py "$IMAGE" "$FINAL_JSON" "$OUTPUT_DIR"
 else
     echo "[5/5] Recorte ignorado: Nenhum cupom encontrado na imagem."
-fi.
+fi
+
+rm -rf "$TMP_DIR"
