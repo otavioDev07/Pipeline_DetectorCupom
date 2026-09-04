@@ -3,9 +3,8 @@ import os
 import json
 import cv2
 import numpy as np
-import re
-import shutil
 
+# Injeta o caminho do filtro de nitidez no PYTHONPATH
 DIRETORIO_ATUAL = os.path.dirname(os.path.abspath(__file__))
 PASTA_SHARPNESS = os.path.join(DIRETORIO_ATUAL, 'sharpness')
 sys.path.append(PASTA_SHARPNESS)
@@ -13,7 +12,7 @@ sys.path.append(PASTA_SHARPNESS)
 try:
     from filter_sharpness import Filter_Sharpness
 except ImportError as e:
-    sys.stderr.write(f"\n[Erro Fatal] Nao consegui carregar o filtro na pasta 'sharpness': {e}\n")
+    sys.stderr.write(f"\n[Erro Fatal] Nao foi possivel carregar o filtro de nitidez: {e}\n")
     sys.exit(1)
 
 def ordenar_pontos(pts):
@@ -34,11 +33,10 @@ def main():
     img_path = sys.argv[1]
     json_path = sys.argv[2]
     out_dir = sys.argv[3]
+    
     os.makedirs(out_dir, exist_ok=True)
 
-    filename = os.path.basename(img_path)
-    matches = re.findall(r'\d+', filename)
-    num_str = matches[0] if matches else "0000"
+    nome_original_arquivo = os.path.basename(img_path)
 
     try:
         with open(json_path, 'r') as f:
@@ -79,16 +77,14 @@ def main():
         fft_score = filtro_nitidez.do(warped)
         
         if fft_score > 0.222:
-            out_path = os.path.join(out_dir, f"{num_str}_P.jpg")
+            out_path = os.path.join(out_dir, nome_original_arquivo)
             cv2.imwrite(out_path, warped)
+            sys.exit(0)
         else:
-            sys.stderr.write(f"[Recorte] {num_str}: imagem rejeitada pelo borradez (FFT: {fft_score:.2f} < 0.222).\n")
-            
-            out_path = os.path.join(out_dir, f"{num_str}_N.jpg")
-            shutil.copy(img_path, out_path)
+            sys.stderr.write(f"[Recorte] {nome_original_arquivo}: rejeitada por borradez (FFT: {fft_score:.3f}).\n")
+            sys.exit(1)
     else:
-        out_path = os.path.join(out_dir, f"{num_str}_N.jpg")
-        shutil.copy(img_path, out_path)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

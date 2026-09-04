@@ -22,7 +22,7 @@ echo "==================================================="
 # Ativa a bolha do Python silenciosamente
 source .venv/bin/activate
 
-# Cria uma pasta temporária para armazenar os JSONs intermediários
+# Cria a pasta temporária de forma segura (não apaga se já existir)
 TMP_DIR="./tmp_pipeline"
 mkdir -p "$TMP_DIR"
 
@@ -31,6 +31,7 @@ HOUGH_JSON="$TMP_DIR/hough.json"
 WS_JSON="$TMP_DIR/ws.json"
 
 echo "[1/4] Rodando RDP (C++)..."
+# O operador '>' faz o truncate (limpa o arquivo JSON anterior e escreve por cima)
 ./RDP+HoughProb/detector "$IMAGE" > "$RDP_JSON"
 
 SCORE_RDP=$(python3 -c "import sys, json; print(json.load(sys.stdin).get('score', 0.0))" < "$RDP_JSON")
@@ -67,6 +68,7 @@ cat "$FINAL_JSON"
 echo "==================================================="
 
 OUTPUT_DIR="../resultMAIN_pipeline"
+mkdir -p "$OUTPUT_DIR"
 
 ACHOU=$(python3 -c "import sys, json; print(json.load(sys.stdin).get('achou', False))" < "$FINAL_JSON" 2>/dev/null)
 
@@ -75,6 +77,4 @@ if [ "$ACHOU" = "True" ]; then
     python3 recortar.py "$IMAGE" "$FINAL_JSON" "$OUTPUT_DIR"
 else
     echo "[5/5] Recorte ignorado: Nenhum cupom encontrado na imagem."
-fi
-
-rm -rf "$TMP_DIR"
+fi.
